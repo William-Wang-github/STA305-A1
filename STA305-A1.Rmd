@@ -1,5 +1,5 @@
 ---
-title: "STA305 Winter 2020 A 1"
+title: "STA305 Winter 2020 A1"
 author: "William Wang, 1004278818"
 output:
   html_document:
