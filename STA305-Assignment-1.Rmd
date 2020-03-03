@@ -1,0 +1,221 @@
+---
+title: "STA305 Winter 2020 Assignment 1"
+author: "William Wang, 1004278818"
+output:
+  html_document:
+    toc: yes
+  pdf_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Package Setup
+
+```{r,message=FALSE, warning=FALSE}
+#Run the below without comments if tidyverse not installed
+#install.packages("tidyverse")
+library('tidyverse')
+```
+
+
+## Question A
+Randomly generate a sample of 16 data points to form the observations under two experimental designs: A completely randomized design and a randomized paired design, to compare two treatments - S and T. Carry out the following steps:
+
+1) Set the seed of your randomization to be the last four digits of your student number.
+
+2) Randomly generate 8 observations from the $N(5, 2^2)$ distribution to correspond to treatment S. List the observed values, to 3 decimal places, and the order in which they appeared.
+
+3) Randomly generate 8 observations from the $N(7, 2^2)$ distribution to correspond to treatment T. List the observed values, to 3 decimal places, and the order in which they appeared.
+
+4) Use the order of the observations in 2) and 3) to form pairs of observations. Display the pairs of observations of treatment S and T for the randomized paired design.
+
+### Question A Solutions:
+  
+**1) Set the seed of your randomization to be the last four digits of your student number.**
+
+
+The seed can be set using the function set.seed, and the seed value is going to be 8818, this is shown below
+```{r}
+set.seed(8818)
+```
+
+
+**2) Randomly generate 8 observations from the $N(5, 2^2)$ distribution to correspond to treatment S. List the observed values, to 3 decimal places, and the order in which they appeared.**
+
+The code and observations for treatment S are shown below:
+
+```{r}
+# Generates a random sample of 8 observations
+# from a N(5, 2^2)
+RandObsTreatmentS <-round(rnorm(8,mean = 5,sd = 2),3)
+RandObsTreatmentS
+```
+
+**3) Randomly generate 8 observations from the $N(7, 2^2)$ distribution to correspond to treatment T. List the observed values, to 3 decimal places, and the order in which they appeared.**
+
+The code and observations for treatment T are shown below:
+
+```{r}
+# Generates a random sample of 8 observations
+# from a N(7, 2^2)
+RandObsTreatmentT <-round(rnorm(8,mean = 7,sd = 2),3)
+RandObsTreatmentT
+```
+
+**4) Use the order of the observations in 2) and 3) to form pairs of observations. Display the pairs of observations of treatment S and T for the randomized paired design.**
+
+The code and pairs for treatments S and T can be seen below:
+
+```{r}
+PairedTreatments <- data.frame(RandObsTreatmentS, RandObsTreatmentT)
+PairedTreatments
+```
+
+## Question B
+For both designs, based on the data simulated in part A, conduct a randomization test to compare the means of the two treatments.
+
+(i) Describe the randomization distribution for this comparison. How many values does this distribution contain? What is the probability of the observed treatment allocation?
+
+(ii) Create a histogram of this randomization distribution; include vertical line(s) to mark the area(s) corresponding to the P-value. Use the randomization test to determine if there is evidence of a difference in means between the two treatments. Explain your answer, including the P-value of your test and how you define ‘significant’ results.
+
+### Question B Solutions:
+
+**(i) Describe the randomization distribution for this comparison. How many values does this distribution contain? What is the probability of the observed treatment allocation?**
+
+To conduct the randomization test for the unpaired design, we will be taking the difference in means between two samples of 8 treatments, testing every possible combination of allocations of 8 for our unpaired data. We display our first 5 combinations used for our first treatment 5 mean differences, for context, and also have the observed mean difference for our data below.
+
+```{r}
+pairdiff <- PairedTreatments$RandObsTreatmentT - PairedTreatments$RandObsTreatmentS
+obsmeanpairdiff <- mean(pairdiff)
+obsmeanpairdiff
+```
+
+```{r}
+Treatments <- c(RandObsTreatmentS,RandObsTreatmentT)
+unpairedobsdf <- data.frame(Treatments)
+
+# Unpaired Randomization Test
+NUnpaired <-choose(16,8)
+resUnpaired <-numeric(NUnpaired)# store the results
+indexUnpaired <-combn(1:16,8)#Generate N treatment assignments
+
+# for loop to generate the mean differences for each combination of data
+for (iUnpaired in 1:NUnpaired){
+  resUnpaired[iUnpaired] <- mean(Treatments[-indexUnpaired[,iUnpaired]])-mean(Treatments[indexUnpaired[,iUnpaired]])
+  }
+
+indexUnpaired[,1:5]
+
+resUnpaired[1:5]
+```
+
+To conduct the randomization test for our paired design we can conduct a similar test to the unpaired. This can be seen below, again with our first 5 treatment allocations and resulting mean differences:
+
+```{r}
+# Paired Randomization Test
+NPaired <- 2^(8)# number of treatment assignments
+resPaired <-numeric(NPaired)#vector to store results
+ST <-list(c(-1,1))# difference is multiplied by -1 or 1
+# generate all possible treatment assign
+trtassign <-expand.grid(rep(ST, 8))
+for(iPaired in 1:NPaired){
+  resPaired[iPaired] <-mean(as.numeric(trtassign[iPaired,])*pairdiff)}
+trtassign[1:5,]
+resPaired[1:5]
+```
+
+The  randomization distribution in the context of our assignment is the set of all possible differences that could occur for all possible treatment allocations. It states that if we assume no difference between the means, then the outcome would not be significantly different if another treatment allocation occured. As such the randomization distribution for our unpaired design would require us to randomly assign 8 units for treatment S and 8 units in treatment T. Whereby, assuming the null distribution is true and the treatment assignments are equiprobable, the randomization distribution for the unpaired design can be characterized using the formula $\hat{F}(y) = \frac{\sum^{{16}\choose{8}}_{i=1} I(\delta_i \leq y)}{{16}\choose{8}}$. Similarly, the randomized distribution for the paired design is the distribution of the average differences for all possible treatment assignments. This randomizes within our pairs and thus would help increase precision for matched pairs of data, where we would have 8 pairs of treatments. In both cases, the randomization distribution is testing whether the means of the differences are any different from each other.
+
+The number of values that each design contains is ${16\choose8} = 12870$ for the unpaired design and $2^8 = 256$ for the paired design, both of which are equiprobable outcomes. Thus, the probability of seeing our exact observed treatment allocation for the unpaired and paired design would be $\frac{1}{12870} \text{ and } \frac{1}{256}$ respectively.
+
+**(ii) Create a histogram of this randomization distribution; include vertical line(s) to mark the area(s) corresponding to the P-value. Use the randomization test to determine if there is evidence of a difference in means between the two treatments. Explain your answer, including the P-value of your test and how you define ‘significant’ results.**
+
+Below we can see the code and plots for the histograms including blue vertical lines which would correspond to the our observed mean denoting the area of our p-value for our data, with the first plot being the unpaired design and the second being the paired design.
+
+```{r}
+tbarUnpaired <-mean(resUnpaired)
+pvalUnpaired <-sum(abs(resUnpaired-tbarUnpaired)>=abs(obsmeanpairdiff-tbarUnpaired))/NUnpaired
+round(pvalUnpaired,3)
+
+hist(resUnpaired, xlab="Mean Difference",main="Randomization Distribution Treatment S and T, Unpaired")
+abline(v = c(obsmeanpairdiff,-obsmeanpairdiff),col="blue")
+```
+
+```{r}
+tbarPaired <-mean(resPaired)
+pvalPaired <-sum(abs(resPaired-tbarPaired)>=abs(obsmeanpairdiff-tbarPaired))/NPaired# Randomization p value
+round(pvalPaired,3)
+
+hist(resPaired, xlab="Mean Difference",main="Randomization Distribution Treatment S and T, Paired")
+abline(v = c(obsmeanpairdiff,-obsmeanpairdiff), col="blue")
+```
+
+Before looking at the p-values we must first set our assumptions, first we will define our significance level that we will be using from here on out, including in Question C, which will be $\alpha = 0.05$, this is our cut-off since it is the general rule of thumb for most p-value analyses and was what we used in class. Next, we will discuss the hypotheses of our randomization tests. The null hypothesis for both our designs is that there is no statistically significant difference between the means of our 2 treatments. The alternative hypothesis would be that there is a statistically significant difference between the means of the 2 treatments. We can see from our outputs that we have p-values of 0.109 and 0.092 for our respective designs, both of which are greater than our significance level of 0.05. This means that assuming there is no difference between our two treatments S and T, the probability that randomizations would produce an observed difference mean as extreme as $1.95625$, is 0.109 and 0.092 for each design respectively. Thus, from these p-values we would conclude that we don't have sufficient evidence to reject our null hypothesis and it's reasonably likely that based on our data and our randomization test, there is no difference between the means of the two treatments.
+
+## Question C
+
+For both designs, based on the data simulated in part A, conduct an appropriate t-test to comparethe means of the two treatments. Note: Assume that the population distributions are Normal but the parameters are unknown.
+
+(i) Explain your answer, including the P-value of your test.
+
+(ii) Are the assumptions behind the t-test satisfied?
+
+(iii) Do the results of the t-test agree with the results of the randomization test? Explain.
+
+### Question C Solutions
+
+**(i) Explain your answer, including the P-value of your test.**
+
+Assuming our population distributions are normal, and the parameters are unknown, we can conduct a few kinds of t tests on our two experimental designs. The first output is a Two-Sample t-test for our unpaired design, assuming the variance is equal, giving us a p value of 0.09129. However, since we typically don't know whether we have constant variance, though in this case we do as we generated the data using the same variance, the second output we have is a Welch's Two Sample t-test for the same unpaired design, which doeesn't assume equality of variances, this returns a p value of 0.09133 which is very similar to our value for test that assumed equal variances. Thus, it seems like it doesn't really matter which t-test we use, since both would result in a p value of roughly 0.0913. In the end, both t-tests are used to test the null hypothesis that there is no difference between the means of the two samples, i.e. our two treatments S and T. We can see that since our p-value is approximately 0.0913, we cannot reject our null hypothesis as our p-value is greater than our definition of a statistically significant result, which would have a p-value of 0.05 or less. Furthermore, we can see that we have a 95% confidence interval provided by the t-test, this gives us a range of values that could reasonably be the mean of the differences assuming there is no difference between the two treatments. As we can see in both t-tests, our observed mean difference does indeed lie within that confidence interval and as such we have more evidence suggesting that there is no difference between the means of the two treatments. Therefore, based the results of our t-test for our completely randomized design, we do not have enough statistically significant evidence to reject the null hypthosis, and as such the difference between the means of the two treatments S and T is likely 0, i.e. there is no difference, for our completely randomized design. The code and outputs for the completely randomized design t-tests are displayed below:
+
+```{r}
+t.test(PairedTreatments$RandObsTreatmentT,PairedTreatments$RandObsTreatmentS, paired=FALSE, alternative = "two.sided", var.equal = TRUE)
+
+t.test(PairedTreatments$RandObsTreatmentT,PairedTreatments$RandObsTreatmentS, paired=FALSE, alternative = "two.sided", var.equal = FALSE)
+```
+
+For the paired design we can use the same function `t.test()`, but we have the added requirement of setting `paired=TRUE`, this can be seen below
+
+```{r}
+t.test(PairedTreatments$RandObsTreatmentT,PairedTreatments$RandObsTreatmentS, paired=TRUE, alternative = "two.sided", var.equal = FALSE)
+```
+
+From the result of this t-test for the randomized paired design, we can see we have a similar conclusion as our completely randomized design, with a p value of 0.125. With our p-value, we can clearly see that it is greater than our significance level of 0.05, thus this means we cannot reject our null hypothesis. In addition, if we look at the 95% confidence interval we can again see that our observed mean does lie within the interval which again provides more support that there is no difference between the means. As a result, based on the results of our paired t-test, we can draw a similar conclusion to before and say that there is likely no statistically significant difference between the two means of our treatments S and T.
+
+**(ii) Are the assumptions behind the t-test satisfied?**
+
+Before we test the assumptions behind the t-test, I will state the assumptions behind the t-test. For us to use the t-test we must satisfy the assumptions of normality, constant variance and independence of the observations, however the latter only requires the pair-differences to be independent for a paired t-test. There are also the minor assumptions of the randomization of the sampling and the continuity of the data. For the minor assumptions, since we generated the set of data from a Normal distribution, the data is guaranteed to be continuous, and since we used the function `rnorm()` in our generation, our treatments should be random samples. Now lets check our assumptions of constant variance. We can do so by using the `var.test()` function on our two sets of data, the variances of which are also displayed for context.
+
+```{r}
+var(RandObsTreatmentS)
+var(RandObsTreatmentT)
+
+var.test(RandObsTreatmentT,RandObsTreatmentS, alternative = "two.sided")
+```
+
+The variance test above tests whether or not the ratio of the variances between two samples are statistically different. Where the null of the test is that the ratio of the variances is equal to 1, i.e. the variances are the same, and the alternative is the ratio is not equal to 1. We can see from our output above that we have a p-value of 0.9146, this would mean that we cannot reject or null hypothesis, meaning that there is no statistically significant evidence suggesting that the ratio of the variances are not 1. Furthermore, we can again look at the 95% confidence interval of our test, notice that both the variances of treatment S and T as well as the ratio of the two, are all within our interval. Thus, as a result we have more support suggesting that the variances of the two treatments are equal, i.e. the ratio is equal to one. Consequently, this means that our assumption of constant variance is likely satisfied.
+
+To test our assumption of normality we can use the following code to create normal QQ plots for both our treatments and the differences between the data.
+
+```{r}
+qqnorm(RandObsTreatmentS, main = "Normal QQ Plot for Treatment S Data")
+qqline(RandObsTreatmentS)
+
+qqnorm(RandObsTreatmentT, main = "Normal QQ Plot for Treatment T Data")
+qqline(RandObsTreatmentT)
+
+qqnorm(pairdiff, main = "Normal QQ Plot for Paired Data")
+qqline(pairdiff)
+```
+
+We can see from our outputs above that in all three plots, the points do mostly lie close to or on the line denoting normality, with the exception of a few points, thus I believe it is reasonable to conclude that our normality assumption is satisfied for our t-test.
+
+Finally, for the assumption of independence of observations, although it is typically difficult to test this assumption from just the data itself, we know that we generated the data using the `rnorm()` function. That function generates independent random values from the normal distribution, and as such we know that our observed set of data would be guaranteed to be independent. Furthermore, because the paired differences are found from independent data we also know that the differences would be independent of each other, though the independence of the actual points is not really important in our paired t-test. Thus, it is reasonable to assume that our independence assumption is satisfied and thus all our assumptions for our t-tests are reasonably satisfied.
+
+**(iii) Do the results of the t-test agree with the results of the randomization test? Explain.**
+
+From our t-test results it does seem that our conclusions do agree with that of our randomization test. This is because, if we look at the p-values for each test, they are very close to our p-values from our randomization test. We can see that the completely randomized design (i.e. the unpaired design) has a p-value of approximately 0.0913 from the t-test and a p-value of 0.092 from the randomization test. These to values are extremely close having a difference of less than 0.001. Thus, it does seem to suggest that the results of our t-test and randomization test do agree, as we also had the same conclusion for both tests, being that there is no difference between the means of both treatments S and T. For the randomized paired design, we have a p-value of 0.125 from our paired t-test and a p-value of 0.109 from our randomization test. Now although there is a slightly larger difference between the two p-values, both in the end still suggest the same conclusion, that being the means are equal between treatments. Thus, I would say that given the fact that both tests for both designs provide the same conclusion and have relatively similar p-values, the results of the t-test agree with the results of the randomization tests and that we can be reasonably certain that there is no difference between the means of our two treatments S and T.
+
